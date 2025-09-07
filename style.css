@@ -1,0 +1,24 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.btn-disabled {
+    background-color: #9ca3af; /* Tailwind gray-400 */
+    cursor: not-allowed;
+}
+
+.progress-bar {
+    background-color: #e5e7eb; /* Tailwind gray-200 */
+    border-radius: 9999px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 300px;
+    margin: 1rem auto;
+}
+
+.progress-bar-inner {
+    height: 10px;
+    background-color: #4f46e5; /* Tailwind indigo-600 */
+    width: 0%;
+    transition: width 0.3s ease-out;
+}
