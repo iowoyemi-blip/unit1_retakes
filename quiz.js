@@ -1,3 +1,14 @@
+// This helper function must be in the global scope to be accessible by the inline `onclick` attribute.
+function insertSymbol(symbol, inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    input.value = input.value.substring(0, start) + symbol + input.value.substring(end);
+    input.focus();
+    input.setSelectionRange(start + 1, start + 1);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- STATE MANAGEMENT ---
     let studentName = '';
@@ -25,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- UTILITY FUNCTIONS ---
     const getRandomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const getRandomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
-
+    
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -63,88 +74,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- PROBLEM GENERATORS ---
     function generatePowerRuleProblem() {
-        const c = getRandomElement([-5, -4, -3, -2]);
-        const p = 2;
-        const vars = shuffleArray(['x','y','z','a','b']).slice(0,2);
+        const c = getRandomElement(coeffs); const p = 2; const vars = shuffleArray(variables).slice(0, 2);
         const question = `Use the power rule to simplify: $$(${c}${vars[0]}${vars[1]})^{${p}}$$`;
         const answer = `${Math.pow(c,p)}${vars[0]}^${p}${vars[1]}^${p}`;
         const solution = `<p>Apply the exponent to each factor inside: $$(${c})^{${p}}(${vars[0]})^{${p}}(${vars[1]})^{${p}} = ${answer}$$</p>`;
         return { question, answer, solution, type: 'Exponent Rule' };
     }
     function generateProductRuleProblem() {
-        const c1 = getRandomInt(-5, 5);
-        const c2 = getRandomInt(2, 5);
-        const [v1, v2] = shuffleArray(['x','y','z','a','b']).slice(0,2);
+        const c1 = getRandomInt(-5, 5) || 1; const c2 = getRandomInt(2, 5); const [v1, v2] = shuffleArray(variables).slice(0, 2);
         const p1 = getRandomInt(2,5), p2 = getRandomInt(2,5), p3 = getRandomInt(2,5), p4 = getRandomInt(2,5);
         const question = `Use the product rule to simplify: $$(${c1}${v1}^{${p1}}${v2}^{${p2}}) \\cdot (${c2}${v1}^{${p3}}${v2}^{${p4}})$$`;
         const answer = `${c1*c2}${v1}^${p1+p3}${v2}^${p2+p4}`;
         const solution = `<p>Multiply coefficients and add exponents of like bases: $$(${c1} \\cdot ${c2})(${v1}^{${p1}+${p3}})(${v2}^{${p2}+${p4}}) = ${answer}$$</p>`;
         return { question, answer, solution, type: 'Exponent Rule' };
     }
-    function generateQuotientRuleProblem() {
-        const c2 = getRandomInt(2, 5) * -1;
-        const m = getRandomInt(2, 6);
-        const c1 = c2 * m * -1;
-        const [v1, v2] = ['s', 'p'];
-        const p3 = getRandomInt(1, 4), p4 = getRandomInt(2, 8);
-        const p1 = p3 + getRandomInt(1, 4), p2 = p4 + getRandomInt(2, 5);
-        const question = `Use the quotient rule to simplify: $$\\frac{${c1}${v1}^{${p1}}${v2}^{${p2}}}{${c2}${v1}^{${p3}}${v2}^{${p4}}}$$`;
-        const c_ans = c1/c2, p1_ans = p1-p3, p2_ans = p2-p4;
-        const answer = `${c_ans}${v1}${p1_ans > 1 ? `^${p1_ans}` : ''}${v2}^${p2_ans}`;
-        const solution = `<p>Divide coefficients and subtract exponents of like bases: $$(\\frac{${c1}}{${c2}})${v1}^{${p1}-${p3}}${v2}^{${p2}-${p4}} = ${answer}$$</p>`;
-        return { question, answer, solution, type: 'Exponent Rule' };
+    function staticQuotientRuleProblem() {
+        return { question: 'Use the quotient rule to simplify: $$\\frac{6s^{3}p^{12}}{-3sp^{4}}$$', answer: '-2s^2p^8', prettyAnswer: '-2s<sup>2</sup>p<sup>8</sup>', solution: '<p>Divide coefficients (6 / -3 = -2) and subtract exponents.</p><p>$$s^{3-1} = s^{2}$$</p><p>$$p^{12-4} = p^{8}$$</p><p>Final Answer: $$-2s^{2}p^{8}$$</p>', type: 'Exponent Rule' };
     }
     function generateSimplifyRadicalVariablesProblem() {
-        const s = getRandomElement([4, 9, 16, 25, 36]);
-        const r = getRandomElement([2, 3, 5]);
-        const n = s * r;
+        const s = getRandomElement([4, 9, 16, 25, 36]), r = getRandomElement([2, 3, 5]); const n = s * r;
         const vars = shuffleArray(['a', 'b', 'c', 'x', 'y']).slice(0, getRandomInt(2, 3));
-        let questionLatex = `${n}`;
-        let answer_out = [Math.sqrt(s)];
-        let answer_in = [r];
+        let questionLatex = `${n}`; let answer_out = [Math.sqrt(s)]; let answer_in = [r];
         vars.forEach(v => {
-            const p = getRandomInt(2, 9);
-            questionLatex += `${v}^{${p}}`;
+            const p = getRandomInt(2, 9); questionLatex += `${v}^{${p}}`;
             const outExp = Math.floor(p/2), inExp = p % 2;
             if(outExp > 0) answer_out.push(`${v}${outExp > 1 ? `^${outExp}` : ''}`);
             if(inExp > 0) answer_in.push(v);
         });
         const question = `Simplify: $$\\sqrt{${questionLatex}}$$`;
-        answer_out.sort();
-        answer_in.sort();
+        answer_out.sort(); answer_in.sort();
         const answer = `${answer_out.join('')}√${answer_in.join('')}`;
         const solution = `<p>Simplify the coefficient and each variable separately, then combine.</p><p>Final Answer: $$${answer.replace("√", "\\sqrt{").replace(/\^(\d+)/g, '^{$1}')}$$</p>`;
         return { question, answer, solution, type: 'Simplify Radical' };
     }
     function generateSimplifyRadicalFractionProblem() {
-        const d_sqrt = getRandomElement([4, 9]);
-        const d = d_sqrt * d_sqrt;
-        const n_s = getRandomElement([4, 9]), n_r = getRandomElement([2, 3, 5]);
-        const n = n_s * n_r, n_coeff = Math.sqrt(n_s);
+        const d_sqrt = getRandomElement([4, 9, 10]); const d = d_sqrt * d_sqrt; const n_s = getRandomElement([4, 9, 16]); const n_r = getRandomElement([2, 3, 5]); const n = n_s * n_r;
         const question = `Simplify the expression: $$\\sqrt{\\frac{${n}}{${d}}}$$`;
+        const n_coeff = Math.sqrt(n_s);
         const answer = `${n_coeff}√${n_r}/${d_sqrt}`;
-        const solution = `<p>Apply the square root to the numerator and denominator separately.</p><p>$$\\frac{\\sqrt{${n}}}{\\sqrt{${d}}} = \\frac{${n_coeff}\\sqrt{${n_r}}}{${d_sqrt}}$$</p>`;
+        const solution = `<p>Apply the square root to the numerator and denominator separately.</p><p>$$\\frac{\\sqrt{${n}}}{\\sqrt{${d}}} = \\frac{\\sqrt{${n_s} \\cdot ${n_r}}}{${d_sqrt}} = \\frac{${n_coeff}\\sqrt{${n_r}}}{${d_sqrt}}$$</p>`;
         return { question, answer, solution, type: 'Simplify Radical' };
     }
     function generateAddSubtractProblem() {
-        const s1=getRandomElement([4,9,16]), s2=getRandomElement([4,9,16,25]);
-        const r = getRandomElement([2,3,5]);
-        const n1 = s1*r, n2 = s2*r;
-        const c1 = getRandomElement([1,1,1,2,3,4,8]), c2 = getRandomElement([1,1,1,2,3,4,6]);
-        const op = getRandomElement(['+','-']);
+        const s1=getRandomElement([4,9,16]), s2=getRandomElement([4,9,16,25]); const r = getRandomElement([2,3,5]); const n1 = s1*r, n2 = s2*r;
+        const c1 = getRandomElement([1,1,2,3,4,8]), c2 = getRandomElement([1,1,2,3,4,6]); const op = getRandomElement(['+','-']);
         const question = `Simplify the expression: $$${c1 === 1 ? '' : c1}\\sqrt{${n1}} ${op} ${c2 === 1 ? '' : c2}\\sqrt{${n2}}$$`;
         const simp_c1 = c1*Math.sqrt(s1), simp_c2 = c2*Math.sqrt(s2);
-        const final_c = op === '+' ? simp_c1 + simp_c2 : simp_c1 - simp_c2;
+        let final_c = op === '+' ? simp_c1 + simp_c2 : simp_c1 - simp_c2; if (final_c === 0) final_c = 1;
         const answer = formatRadicalAnswer(final_c, r);
         const solution = `<p>Simplify each term, then combine like radicals: $$${simp_c1}\\sqrt{${r}} ${op} ${simp_c2}\\sqrt{${r}} = ${formatLatexRadical(final_c, r)}$$</p>`;
         return { question, answer, solution, type: 'Radical Operation' };
     }
     function generateMultiplyProblem() {
-        const c1 = getRandomElement([1,2,3]), c2 = getRandomElement([1,5,6]);
-        const r1 = getRandomInt(5,10), r2 = getRandomInt(2,12);
+        const c1 = getRandomElement([1,2,3]), c2 = getRandomElement([1,5,6]); const r1 = getRandomInt(5,10), r2 = getRandomInt(2,12);
         const question = `Multiply and simplify: $$${c1 === 1 ? '' : c1}\\sqrt{${r1}} \\cdot ${c2 === 1 ? '' : c2}\\sqrt{${r2}}$$`;
-        const product = r1 * r2;
-        let simpCoeff = 1, simpRad = product;
+        const product = r1 * r2; let simpCoeff = 1, simpRad = product;
         const perfectSquares = [144, 100, 81, 64, 49, 36, 25, 16, 9, 4];
         for (const s of perfectSquares) { if (product % s === 0) { simpCoeff = Math.sqrt(s); simpRad = product / s; break; } }
         const answer = formatRadicalAnswer(c1*c2*simpCoeff, simpRad);
@@ -165,59 +149,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const solution = `<p>A base of -1 to an even power is 1. A base of -1 to an odd power is -1.</p>`;
         return { question, answer: answer.toString(), solution, type: 'Evaluate' };
     }
-    function generateComplexExpressionProblem() {
-        const c1 = getRandomInt(-8, -2), c2 = getRandomInt(2, 4), c3 = getRandomInt(2, 4);
-        const x1=getRandomInt(1,2), x2=getRandomInt(2,4), x3=getRandomInt(2,3), x4=getRandomInt(2,4), y1=getRandomInt(2,5), y2=getRandomInt(2,5), y3=getRandomInt(2,3), y4=getRandomInt(2,4);
-        const p_outer = getRandomInt(2,3);
-        const question = `Simplify using only positive exponents: $$(\\frac{${c1}x^{${x1}}y^{${y1}} \\cdot x^{${x2}}y^{${y2}}}{${c2}x^{${x3}} \\cdot ${c3}x^{${x4}}y^{${y4}}})^{${p_outer}}$$`;
-        const num_c = c1, num_x = x1+x2, num_y = y1+y2, den_c = c2*c3, den_x = x3+x4, den_y = y4;
-        const mid_x = num_x - den_x, mid_y = num_y - den_y;
-        const final_x = mid_x * p_outer, final_y = mid_y * p_outer;
-        const final_c_num = Math.pow(num_c, p_outer), final_c_den = Math.pow(den_c, p_outer);
-        let num_parts = [], den_parts = [];
-        const gcd = (a, b) => b === 0 ? a : gcd(Math.abs(a), Math.abs(b));
-        const common = gcd(final_c_num, final_c_den);
-        let simp_num = final_c_num / common, simp_den = final_c_den / common;
-        if (simp_den < 0) { simp_num *= -1; simp_den *= -1; }
-        num_parts.push(simp_num);
-        if (simp_den !== 1) den_parts.push(simp_den);
-        if (final_x > 0) num_parts.push(`x^${final_x}`); else if (final_x < 0) den_parts.push(`x^${-final_x}`);
-        if (final_y > 0) num_parts.push(`y^${final_y}`); else if (final_y < 0) den_parts.push(`y^${-final_y}`);
-        const answer = den_parts.length > 0 ? `${num_parts.join('')}/${den_parts.join('')}` : num_parts.join('');
-        const solution = `<p>Simplify inside the parentheses first, then apply the outer power and ensure all exponents are positive.</p>`;
-        return { question, answer, solution, type: 'Complex Expression' };
-    }
-    function generateSimpleDivisionProblem() {
-        const primes = [2, 3, 5, 7], perfect_squares = [4, 9, 16, 25];
-        const q_s = getRandomElement(perfect_squares), q_r = getRandomElement(primes);
-        const q = q_s * q_r, d = getRandomElement([2, 3, 4, 5]), n = q * d;
-        const question = `Perform the operation and simplify: $$\\frac{\\sqrt{${n}}}{\\sqrt{${d}}}$$`;
-        const simp_coeff = Math.sqrt(q_s);
-        const answer = formatRadicalAnswer(simp_coeff, q_r);
-        const latexAnswer = formatLatexRadical(simp_coeff, q_r);
-        const solution = `<p>Combine into one radical, simplify the fraction, then simplify the resulting radical.</p><p>$$\\sqrt{\\frac{${n}}{${d}}} = \\sqrt{${q}} = \\sqrt{${q_s} \\cdot ${q_r}} = ${latexAnswer}$$</p>`;
-        return { question, answer: answer.toString(), solution, type: 'Radical Operation' };
-    }
-    function generateRationalizeDivisionProblem() {
-        let n, d; const n_pool = [2,3,5,7], d_pool = [2,3,5,7,11,13];
-        do { n = getRandomElement(n_pool); d = getRandomElement(d_pool); } while (n === d);
-        const question = `Perform the operation and simplify: $$\\frac{\\sqrt{${n}}}{\\sqrt{${d}}}$$`;
-        const answer = `√${n*d}/${d}`;
-        const solution = `<p>Rationalize the denominator: $$\\frac{\\sqrt{${n}}}{\\sqrt{${d}}} \\cdot \\frac{\\sqrt{${d}}}{\\sqrt{${d}}} = \\frac{\\sqrt{${n*d}}}{${d}}$$'</p>`;
-        return { question, answer, solution, type: 'Radical Operation' };
-    }
+    function staticComplexExpressionA(){return{question:'Fully simplify using only positive exponents: $$(\\frac{-8xy^{7} \\cdot x^{3}y^{3}}{2x^{2} \\cdot 2x^{3}y^{4}})^{3}$$',answer:'-8y^18/x^3',prettyAnswer:'-8y<sup>18</sup>/x<sup>3</sup>',solution:"<p><b>Simplify Inside:</b> $$\\frac{-8x^{4}y^{10}}{4x^{5}y^{4}} = -2x^{-1}y^{6}$$</p><p><b>Apply Outer Power:</b> $$(-2x^{-1}y^{6})^{3} = -8x^{-3}y^{18}$$</p><p><b>Positive Exponents:</b> $$\\frac{-8y^{18}}{x^{3}}$$'</p>",type:"Complex Expression"}}
+    function staticComplexExpressionB(){return{question:'Fully simplify using only positive exponents: $$(\\frac{(3xy^{5})^{2}}{(x^{2}y^{3})^{3} \\cdot 3x^{4}y^{2}})^{2}$$',answer:'81/(x^16y^2)',prettyAnswer:'81/(x<sup>16</sup>y<sup>2</sup>)',solution:"<p><b>Simplify Numerator:</b> $$(3xy^{5})^{2} = 9x^{2}y^{10}$$</p><p><b>Simplify Denominator:</b> $$(x^{6}y^{9})(3x^{4}y^{2}) = 3x^{10}y^{11}$$</p><p><b>Simplify Fraction:</b> $$\\frac{9x^{2}y^{10}}{3x^{10}y^{11}} = 3x^{-8}y^{-1}$$</p><p><b>Outer Power:</b> $$(3x^{-8}y^{-1})^{2} = 9x^{-16}y^{-2} = \\frac{9}{x^{16}y^{2}}$$'</p>",type:"Complex Expression"}}
     function generateSimpleRadicalProblem() {
-        const s = getRandomElement(perfectSquares);
-        const r = getRandomElement(primes);
-        const n = s * r;
+        const s = getRandomElement(perfectSquares), r = getRandomElement(primes); const n = s * r;
         const question = `Simplify each radical expression. $$\\sqrt{${n}}$$`;
         const answer = `${Math.sqrt(s)}√${r}`;
         const prettyAnswer = `${Math.sqrt(s)}&radic;${r}`;
         const solution = `<p>$$\\sqrt{${n}} = \\sqrt{${s} \\cdot ${r}} = ${Math.sqrt(s)}\\sqrt{${r}}$$</p>`;
         return { question, answer, prettyAnswer, solution, type: 'Simplify Radical'};
     }
+    function staticSimpleDivisionProblem(){return{question:'Perform the indicated operations and, if possible, simplify. $$\\frac{\\sqrt{200}}{\\sqrt{5}}$$',answer:'2√10',prettyAnswer:'2&radic;10',solution:'<p>$$\\sqrt{\\frac{200}{5}} = \\sqrt{40} = \\sqrt{4 \\cdot 10} = 2\\sqrt{10}$$</p>',type:"Radical Operation"}}
+    function staticRationalizeDivisionProblem(){return{question:'Perform the indicated operations and, if possible, simplify. $$\\frac{\\sqrt{2}}{\\sqrt{3}}$$',answer:'√6/3',prettyAnswer:'&radic;6/3',solution:'<p>$$\\frac{\\sqrt{2}}{\\sqrt{3}} \\cdot \\frac{\\sqrt{3}}{\\sqrt{3}} = \\frac{\\sqrt{6}}{3}$$</p>',type:"Radical Operation"}}
 
-    // --- QUIZ LOGIC (Fully Asynchronous, one question at a time) ---
+    // --- QUIZ LOGIC ---
     function generateQuiz() {
         score = 0; questionsAnswered = 0;
         completionContainer.innerHTML = ''; completionContainer.classList.add('hidden');
@@ -229,12 +174,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const progressBarInner = document.getElementById('progress-bar-inner');
 
         const generatorsToCall = [
-            generatePowerRuleProblem, generateProductRuleProblem, generateQuotientRuleProblem,
+            generatePowerRuleProblem, generateProductRuleProblem, staticQuotientRuleProblem,
             generateSimplifyRadicalVariablesProblem, generateSimplifyRadicalFractionProblem,
             generateAddSubtractProblem, generateMultiplyProblem, generateNegationExponentProblem,
-            generateNegativeBaseExponentProblem, generateComplexExpressionProblem, generateComplexExpressionProblem,
+            generateNegativeBaseExponentProblem, staticComplexExpressionA, staticComplexExpressionB,
             generateSimpleRadicalProblem, generateSimplifyRadicalVariablesProblem, generateAddSubtractProblem,
-            generateMultiplyProblem, generateSimpleDivisionProblem, generateRationalizeDivisionProblem,
+            generateMultiplyProblem, staticSimpleDivisionProblem, staticRationalizeDivisionProblem,
         ];
         currentQuestions = [];
         
@@ -243,20 +188,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderQuiz(shuffleArray(currentQuestions));
                 return;
             }
-            // Generate just one problem
             const generator = generatorsToCall[index];
-            const problem = generator();
-            currentQuestions.push(problem);
+            currentQuestions.push(generator());
             
-            // Update the progress bar UI
             const progress = (currentQuestions.length / totalProblems) * 100;
             if(progressText) progressText.textContent = `Generating ${currentQuestions.length}/${totalProblems} new problems...`;
             if(progressBarInner) progressBarInner.style.width = `${progress}%`;
 
-            // Schedule the next problem to be generated after a tiny delay
             setTimeout(() => generateOneAtATime(index + 1), 30);
         }
-        // Start the generation process
         setTimeout(generateOneAtATime, 50);
     }
     function renderQuiz(questions) {
@@ -264,13 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const placeholder = 'Enter your simplified answer';
             return `<div class="bg-white p-6 rounded-lg shadow-md"><div class="flex justify-between items-start"><div class="text-lg font-medium text-gray-800 pr-4"><span class="font-bold mr-2">${index + 1}.</span> ${q.question}</div><span class="flex-shrink-0 bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">${q.type}</span></div><div class="mt-4 flex flex-col sm:flex-row sm:items-center"><div class="relative flex-grow"><input type="text" id="answer-${index}" class="w-full pl-4 pr-24 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="${placeholder}"><div class="absolute top-1/2 right-1 transform -translate-y-1/2"><button class="h-8 w-8 text-xl bg-gray-200 hover:bg-gray-300 text-gray-700 font-sans rounded-md" onclick="insertSymbol('√', 'answer-${index}')">√</button><button class="h-8 w-8 text-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-sans rounded-md ml-1" onclick="insertSymbol('^', 'answer-${index}')">xʸ</button></div></div><button id="submit-${index}" class="mt-2 sm:mt-0 sm:ml-2 w-full sm:w-auto px-6 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600">Submit</button></div><div id="solution-${index}" class="hidden mt-4 p-4 bg-gray-50 rounded-md border border-gray-200">${q.solution}</div></div>`;
         }).join('');
-
         quizContainer.innerHTML = cardsHTML;
-        
-        try {
-            MathJax.typesetPromise();
-        } catch (e) { console.error("MathJax rendering failed but quiz is functional.", e); }
-
+        try { MathJax.typesetPromise(); } catch (e) { console.error("MathJax rendering failed but quiz is functional.", e); }
         updateScoreDisplay();
         questions.forEach((q, index) => {
             const submitBtn = document.getElementById(`submit-${index}`);
@@ -338,16 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { console.error("Download failed:", error); alert("An error occurred while creating the download file."); }
     }
     
-    // This needs to be globally accessible for the inline HTML onclick
-    window.insertSymbol = function(symbol, inputId) {
-        const input = document.getElementById(inputId);
-        const start = input.selectionStart;
-        const end = input.selectionEnd;
-        input.value = input.value.substring(0, start) + symbol + input.value.substring(end);
-        input.focus();
-        input.setSelectionRange(start + 1, start + 1);
-    }
-
     // --- INITIALIZATION ---
     startQuizBtn.addEventListener('click', () => {
         const name = studentNameInput.value.trim();
